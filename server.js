@@ -34,6 +34,7 @@ SALON INFO:
 - Address: ${BUSINESS.address}
 - Phone number: ${BUSINESS.phone}
 - We have Vietnamese-speaking staff, accept crypto payments, and welcome walk-ins.
+- We are closed on Sundays so our team can rest and attend church. If a caller asks why we are closed on Sunday, share this warmly.
 
 BUSINESS RULES:
 - Do NOT quote specific prices. We do not have a price list loaded yet. If asked about price, say our staff will give exact pricing when they arrive, or offer to have a team member call them back.
@@ -91,7 +92,7 @@ fastify.register(async (f) => {
         try {
           let full = '';
           currentStream = anthropic.messages.stream({
-            model: 'claude-haiku-4-5-20251001', // nhanh, rẻ, hợp voice. Đổi 'claude-sonnet-4-6' nếu cần khôn hơn.
+            model: 'claude-haiku-4-5', // nhanh, rẻ, hợp voice. Đổi 'claude-sonnet-4-6' nếu cần khôn hơn.
             max_tokens: 200,
             system: SYSTEM_PROMPT,
             messages: history,
