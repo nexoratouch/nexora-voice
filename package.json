@@ -1,0 +1,15 @@
+{
+  "name": "nexora-voice",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Voice AI lễ tân cho tiệm nail — Twilio ConversationRelay + Claude (NEXORA TOUCH)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
+    "@fastify/websocket": "^11.0.0",
+    "fastify": "^5.0.0"
+  }
+}
