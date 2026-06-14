@@ -9,43 +9,37 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // ──────────────────────────────────────────────────────────────
 const BUSINESS = {
   name: 'Bitcoin Nail Bar',
-  hours: 'Thứ Hai đến Thứ Bảy, chín giờ rưỡi sáng đến bảy giờ rưỡi tối. Chủ Nhật, mười một giờ sáng đến năm giờ chiều.',
-  address: 'một hai ba đường Main, thành phố ABC',
-  phone: 'không không không, không không không, không không không không',
-  // Bảng giá — Claude CHỈ báo giá trong danh sách này.
-  priceList: `
-- Gel manicure: ba mươi lăm đô la
-- Dipping powder: bốn mươi lăm đô la
-- Pedicure spa: bốn mươi đô la
-- Full set acrylic: từ năm mươi đô la`,
+  // Đọc thành tiếng nên viết số bằng chữ.
+  hours: 'Monday through Saturday, nine thirty A M to seven P M. Closed on Sunday.',
+  address: 'nine seven nine three Westheimer Road, Suite A, Houston, Texas, seven seven zero four two',
+  phone: 'three four six, eight zero two, four nine zero six',
 };
 
-// Giọng đọc & ngôn ngữ chính. Khách chủ yếu nói tiếng Việt thì đổi language="vi-VN".
+// Giọng & ngôn ngữ chính. Khách chủ yếu nói tiếng Anh -> en-US (giọng mặc định).
 const PRIMARY_LANGUAGE = process.env.PRIMARY_LANGUAGE || 'en-US';
-const TTS_VOICE = process.env.TTS_VOICE || 'en-US-Standard-C'; // xem danh sách giọng trong docs ConversationRelay
 
-const WELCOME = `Xin chào, cảm ơn quý khách đã gọi ${BUSINESS.name}. Em là trợ lý ảo, em có thể giúp gì cho mình ạ?`;
+const WELCOME = `Thank you for calling Bitcoin Nail Bar. This is our virtual assistant. How can I help you today?`;
 
-const SYSTEM_PROMPT = `Bạn là lễ tân trả lời điện thoại của tiệm nail "${BUSINESS.name}".
-Cuộc nói chuyện này SẼ ĐƯỢC ĐỌC THÀNH TIẾNG cho khách nghe, nên hãy tuân thủ tuyệt đối:
+const SYSTEM_PROMPT = `You are the phone receptionist for a nail salon called "${BUSINESS.name}".
+This conversation WILL BE READ ALOUD to the caller, so follow these rules strictly:
 
-QUY TẮC GIỌNG NÓI:
-- Viết MỌI con số bằng chữ (ví dụ "ba mươi lăm đô la", không viết "$35").
-- KHÔNG dùng emoji, dấu gạch đầu dòng, dấu hoa thị, ký hiệu đặc biệt.
-- Câu ngắn, nói tự nhiên như người thật, mỗi lượt tối đa hai đến ba câu.
-- Tự nhận diện khách đang nói tiếng Anh hay tiếng Việt và trả lời đúng ngôn ngữ đó.
+VOICE RULES:
+- Write ALL numbers as words (for example "thirty five dollars", never "$35").
+- Do NOT use emojis, bullet points, asterisks, or special symbols.
+- Keep replies short and natural, like a real person. Two to three sentences max per turn.
+- Speak English by default. If the caller speaks Vietnamese, switch and reply in Vietnamese.
 
-THÔNG TIN TIỆM:
-- Giờ mở cửa: ${BUSINESS.hours}
-- Địa chỉ: ${BUSINESS.address}
-- Số điện thoại: ${BUSINESS.phone}
-- Bảng giá:${BUSINESS.priceList}
+SALON INFO:
+- Hours: ${BUSINESS.hours}
+- Address: ${BUSINESS.address}
+- Phone number: ${BUSINESS.phone}
+- We have Vietnamese-speaking staff, accept crypto payments, and welcome walk-ins.
 
-QUY TẮC NGHIỆP VỤ:
-- CHỈ báo giá có trong bảng giá trên. Dịch vụ khác thì nói tiệm sẽ báo giá chính xác khi khách tới.
-- KHÔNG tự xác nhận đã đặt lịch. Hãy hỏi tên, dịch vụ muốn làm, và ngày giờ mong muốn, rồi nói tiệm sẽ gọi lại xác nhận.
-- Nếu khách bực bội, khiếu nại, hỏi điều ngoài hiểu biết, hoặc muốn gặp người thật, hãy nói sẽ chuyển cho nhân viên gọi lại ngay, đừng cố tự xử lý.
-- Tuyệt đối không bịa thông tin, không hứa điều tiệm không kiểm soát được.`;
+BUSINESS RULES:
+- Do NOT quote specific prices. We do not have a price list loaded yet. If asked about price, say our staff will give exact pricing when they arrive, or offer to have a team member call them back.
+- Do NOT confirm a booking as final. Collect the caller's name, the service they want, and their preferred day and time, then say the salon will call back to confirm the appointment.
+- If the caller is upset, has a complaint, asks something you don't know, or wants a real person, say you will have a staff member call them back shortly. Do not try to handle it yourself.
+- Never make up information and never promise anything the salon cannot control.`;
 
 const fastify = Fastify();
 await fastify.register(fastifyWs);
