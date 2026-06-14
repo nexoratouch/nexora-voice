@@ -50,6 +50,15 @@ QUY TẮC NGHIỆP VỤ:
 const fastify = Fastify();
 await fastify.register(fastifyWs);
 
+// Twilio gửi dữ liệu dạng form (application/x-www-form-urlencoded).
+// Mình không cần đọc nội dung form cho webhook /twiml, nên chỉ cần
+// bảo Fastify "chấp nhận" kiểu dữ liệu này thay vì từ chối (lỗi 415).
+fastify.addContentTypeParser(
+  'application/x-www-form-urlencoded',
+  { parseAs: 'string' },
+  (req, body, done) => done(null, body)
+);
+
 // 1) Endpoint TwiML — Twilio gọi vào đây khi có cuộc gọi đến
 fastify.all('/twiml', async (req, reply) => {
   const host = process.env.PUBLIC_HOST || req.headers.host;
