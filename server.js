@@ -173,11 +173,11 @@ is_booking=true only if caller wanted to schedule an appointment.`,
   },
 
   // ── 2) BITCOIN NAIL BAR — Lễ tân tiệm nail ──────────────────
-  '+18327995559': {
+  '+18329795559': {
     key: 'nexora-touch',
     name: 'NEXORA TOUCH',
     type: 'support',
-    twilioFrom: '+18327995559',
+    twilioFrom: '+18329795559',
     voice: 'Joanna-Generative',
     welcome: 'Thank you for calling NEXORA TOUCH. This is your virtual support agent. How can I help you today?',
     systemPrompt: `You are a friendly female support agent for NEXORA TOUCH — a digital tipping, review, and loyalty platform built for nail salons, powered by VLINKPAY and AI.
