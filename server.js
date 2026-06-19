@@ -178,10 +178,11 @@ is_booking=true only if caller wanted to schedule an appointment.`,
     name: 'NEXORA TOUCH',
     type: 'support',
     twilioFrom: '+18329795559',
-    voice: 'vi-VN-Wavenet-A',
-    language: 'vi-VN',
-    ttsProvider: 'Google',
-    welcome: 'Xin chào, cảm ơn quý khách đã gọi cho Nexora Touch. Em có thể giúp gì cho anh chị ạ?',
+    voice: 'Joanna-Generative',   // giọng Anh cho câu chào
+    language: 'en-US',            // đọc welcome bằng tiếng Anh
+    ttsProvider: undefined,
+    switchToVietnamese: true,     // tự chuyển sang tiếng Việt sau câu chào
+    welcome: 'Thank you for calling Nexora Touch. Please hold on for a moment.',
     systemPrompt: `Bạn là nhân viên hỗ trợ nữ, thân thiện của Nexora Touch — nền tảng số hóa tiền tip, đánh giá và chương trình khách hàng thân thiết dành cho tiệm nail, được tích hợp thanh toán thông qua VLINKPAY.
 Cuộc trò chuyện này SẼ ĐƯỢC ĐỌC THÀNH TIẾNG, vì vậy tuân thủ các quy tắc sau:
 
@@ -351,7 +352,29 @@ fastify.register(async (f) => {
         callerPhone = msg.from || null;
         isNew = await checkAndLogCaller(callerPhone);
         console.log(`${biz.name} | ${callerPhone} | ${isNew?'🆕 NEW':'🔁 RETURNING'}`);
-        // Promo SMS cho khách mới (chỉ tiệm nail)
+
+        // Chuyển sang giọng tiếng Việt Neural2 sau câu chào tiếng Anh
+        if (biz.switchToVietnamese) {
+          setTimeout(() => {
+            try {
+              socket.send(JSON.stringify({
+                type: 'language',
+                ttsLanguage: 'vi-VN',
+                transcriptionLanguage: 'vi-VN',
+                voice: 'vi-VN-Neural2-A',
+                ttsProvider: 'Google',
+              }));
+              // Câu chào tiếng Việt sau khi đã chuyển giọng
+              socket.send(JSON.stringify({
+                type: 'text',
+                token: 'Xin chào, em có thể giúp gì cho anh chị ạ?',
+                last: true,
+              }));
+            } catch {}
+          }, 1500); // đợi 1.5 giây sau câu chào tiếng Anh
+        }
+
+        // Promo SMS cho khách mới
         if (isNew && callerPhone && biz.promoSms) {
           await sendSms(callerPhone, biz.promoSms, biz.twilioFrom);
         }
