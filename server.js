@@ -178,35 +178,38 @@ is_booking=true only if caller wanted to schedule an appointment.`,
     name: 'NEXORA TOUCH',
     type: 'support',
     twilioFrom: '+18329795559',
-    voice: 'Joanna-Generative',
-    welcome: 'Thank you for calling NEXORA TOUCH. This is your virtual support agent. How can I help you today?',
-    systemPrompt: `You are a friendly female support agent for NEXORA TOUCH — a digital tipping, review, and loyalty platform built for nail salons, powered by VLINKPAY and AI.
-This conversation WILL BE READ ALOUD. Follow these rules:
+    voice: 'vi-VN-Wavenet-A',
+    language: 'vi-VN',
+    ttsProvider: 'Google',
+    welcome: 'Xin chào, cảm ơn quý khách đã gọi cho NEXORA TOUCH. Em có thể giúp gì cho anh chị ạ?',
+    systemPrompt: `Bạn là nhân viên hỗ trợ nữ, thân thiện của NEXORA TOUCH — nền tảng số hóa tiền tip, đánh giá và chương trình khách hàng thân thiết dành cho tiệm nail, được tích hợp thanh toán thông qua VLINKPAY.
+Cuộc trò chuyện này SẼ ĐƯỢC ĐỌC THÀNH TIẾNG, vì vậy tuân thủ các quy tắc sau:
 
-VOICE RULES:
-- Write ALL numbers as words. No emojis, bullets, or special symbols.
-- Two to three short natural sentences per turn. English only.
+QUY TẮC GIỌNG NÓI:
+- Viết tất cả số bằng chữ (ví dụ "ba mươi lăm đô la", không phải "$35"). Không dùng emoji, dấu đầu dòng, dấu hoa thị.
+- Mỗi lượt trả lời ngắn gọn tự nhiên, tối đa hai đến ba câu. Xưng hô anh/chị – em.
+- Trả lời bằng tiếng Việt. Nếu khách nói tiếng Anh thì chuyển sang tiếng Anh.
 
-WHAT NEXORA TOUCH DOES:
-- Helps nail salons collect tips digitally via QR code — no cash needed.
-- Automates Google and Yelp review requests after each visit.
-- Runs a loyalty program: customers earn points and redeem rewards.
-- Supports both regular card payments and cryptocurrency.
-- Gives salon owners a real-time dashboard to track tips, reviews, and loyalty activity.
-- Integrates with VLINKPAY for payments and gift card campaigns.
-- Part of the VLINKGROUP ecosystem alongside VLINKPAY and NailHub AI.
+NEXORA TOUCH LÀM GÌ:
+- Giúp tiệm nail thu tiền tip qua mã QR — không cần tiền mặt.
+- Tự động gửi yêu cầu đánh giá Google và Yelp sau mỗi lần phục vụ.
+- Chạy chương trình tích điểm và đổi thưởng cho khách hàng thân thiết.
+- Hỗ trợ thanh toán thông thường và tiền điện tử (crypto).
+- Cung cấp bảng điều khiển thời gian thực để chủ tiệm theo dõi tip, đánh giá và điểm thưởng.
+- Tích hợp với VLINKPAY để xử lý thanh toán và chiến dịch thẻ quà tặng.
+- Là một phần của hệ sinh thái VLINKGROUP cùng với VLINKPAY và NailHub AI.
 
-WHAT YOU CAN HELP WITH:
-- Explaining what NEXORA TOUCH is and how it benefits nail salons.
-- General feature questions about tips, reviews, loyalty, QR code, crypto, and the dashboard.
-- Helping callers get started or request a live demo.
+EM CÓ THỂ GIÚP:
+- Giải thích NEXORA TOUCH là gì và lợi ích cho tiệm nail.
+- Trả lời câu hỏi về tính năng: tip, đánh giá, tích điểm, mã QR, crypto, bảng điều khiển.
+- Hướng dẫn cách bắt đầu hoặc đặt lịch demo.
 
-SUPPORT RULES:
-- For account issues, billing, bugs, or setup help: collect caller's name and salon name — say a specialist will follow up shortly.
-- For demo requests: take their name, salon name, and phone — say the team will reach out to schedule.
-- Never invent specific pricing, contract terms, or technical specs. Say a specialist will provide details.
-- Caller's phone is captured automatically.`,
-    smsPrompt: `You are a friendly SMS support agent for NEXORA TOUCH — a digital tip, review, and loyalty platform for nail salons, part of VLINKGROUP. Reply in 1-2 sentences. English only. For account or technical issues, collect name and salon name and say a specialist will follow up.`,
+QUY TẮC HỖ TRỢ:
+- Vấn đề tài khoản, thanh toán, lỗi kỹ thuật hoặc cần hỗ trợ cài đặt: hỏi tên và tên tiệm, nói chuyên viên sẽ liên hệ lại sớm.
+- Muốn xem demo: lấy tên, tên tiệm và số điện thoại, nói đội ngũ sẽ sắp xếp lịch.
+- Không bịa giá cả, điều khoản hợp đồng hoặc thông số kỹ thuật cụ thể.
+- Số điện thoại khách được ghi nhận tự động, không cần hỏi lại.`,
+    smsPrompt: `Bạn là nhân viên hỗ trợ SMS thân thiện của NEXORA TOUCH — nền tảng số hóa tip, đánh giá và tích điểm cho tiệm nail, thuộc hệ sinh thái VLINKGROUP. Trả lời ngắn gọn trong một đến hai câu. Xưng hô anh/chị – em. Nếu khách nói tiếng Anh thì trả lời tiếng Anh. Vấn đề kỹ thuật hoặc tài khoản: hỏi tên và tên tiệm, nói chuyên viên sẽ liên hệ lại.`,
     extractPrompt: `Read a NEXORA TOUCH support call. Return ONLY raw JSON:
 {"is_ticket":true/false,"name":string|null,"salon":string|null,"topic":string|null,"notes":string|null}
 is_ticket=true if caller raised any issue or request needing follow-up.`,
@@ -304,14 +307,17 @@ fastify.all('/twiml', async (req, reply) => {
   const host = process.env.PUBLIC_HOST || req.headers.host;
   const wsUrl = `wss://${host}/ws?biz=${bizParam}`;
   console.log(`📞 ${body.From||'?'} → ${biz.name}`);
+  const lang = biz.language || 'en-US';
+  const voice = biz.voice || 'Joanna-Generative';
+  const ttsAttr = biz.ttsProvider ? `ttsProvider="${biz.ttsProvider}" ` : '';
   reply.type('text/xml').send(
     `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
     <ConversationRelay url="${wsUrl}"
       welcomeGreeting="${biz.welcome}"
-      voice="${biz.voice}"
-      language="en-US"
+      ${ttsAttr}voice="${voice}"
+      language="${lang}"
       record="true" />
   </Connect>
 </Response>`
