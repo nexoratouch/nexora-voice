@@ -5,7 +5,7 @@ import pg from 'pg';
 import twilio from 'twilio';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = 'claude-haiku-4-5';
+const MODEL = process.env.MODEL || 'claude-haiku-4-5'; // đổi 'claude-sonnet-4-6' qua Railway Variables nếu muốn demo thông minh hơn
 
 // ── Twilio ────────────────────────────────────────────────────
 const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
@@ -53,6 +53,15 @@ async function initDb() {
       phone TEXT PRIMARY KEY,
       history JSONB DEFAULT '[]',
       updated_at TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS milestones (
+      business_key TEXT, kind TEXT,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (business_key, kind)
+    );
+    CREATE TABLE IF NOT EXISTS weekly_log (
+      week_key TEXT PRIMARY KEY,
+      sent_at TIMESTAMPTZ DEFAULT now()
     );
   `);
   console.log('✅ Database ready.');
@@ -153,67 +162,44 @@ SALON INFO:
 - Closed Sundays so the team can rest and attend church.
 - First-time guests receive twenty percent off select services.
 
-PEDICURE MENU:
-- Classic Pedicure: forty dollars (thirty minutes — soaking, trimming, cuticle care, exfoliation, callus removal, massage, hot towel)
-- Milk and Honey Pedicure: fifty five dollars (forty five minutes — warm milk soak, exfoliation, leg mask wrap, massage)
-- Paris Pearl: seventy five dollars (sixty minutes — pearl powder soak, sugar scrub, hydrating mask, paraffin wax, pearly lotion massage)
-- Bitcoin Twenty Four K Gold: ninety nine dollars (seventy five minutes — gold treatment, bath bomb, sugar scrub, collagen mask, paraffin, hot stone massage, collagen sock wrap)
-- President Seven Star: four hundred ninety nine dollars (The Ultimate Royal Treatment — seventy minute massage, CBD rose petal soak, diamond exfoliation, collagen mask, includes your choice of premium manicure or full set, collagen hand treatment, double paraffin wax for hands and feet, plus premium champagne or wine)
-- Add Gel Polish to any pedicure: twenty dollars. Extra massage: two dollars per minute.
+PRICE LIST (state these prices when asked):
+Pedicures: Classic forty. Milk and Honey fifty five. Paris Pearl seventy five. Bitcoin Twenty Four K Gold ninety nine. President Seven Star four hundred ninety nine (ultimate royal package, includes premium manicure or full set plus champagne). Add gel polish twenty. Extra massage two dollars per minute.
+Manicures: Classic twenty five. Deluxe thirty five. Gel Shellac forty five. Milk and Honey fifty. Gel polish change thirty. Gel remover ten.
+Acrylic full set: with polish fifty. Shellac sixty. White or Pear Tip fifty five. Color Powder sixty. Ombre seventy. Pink and White seventy. Ombre two color sixty five, three color seventy five.
+Acrylic fill: with polish forty. Shellac fifty. Tip forty. Color Powder fifty. Ombre sixty. Pink and White sixty.
+Dipping: powder fifty two. With tip sixty. Pink and White seventy. Ombre seventy. Add manicure twenty, cuticle care ten.
+Gel services: Builder Gel natural set sixty five, with tip seventy. Gel-X full set sixty five, refill fifty five.
+Kids: pedicure twenty five, manicure fifteen, polish ten, gel add-on fifteen.
+Waxing (starting prices): eyebrow fifteen, lip ten, chin fifteen, full face forty five, underarms twenty five, full arms forty, full legs sixty, back forty five, bikini forty five, Brazilian sixty.
+Add-ons: paraffin wax fifteen, collagen sock or gloves fifteen, hot stone ten and up, nail design seven and up, nail repair seven and up, take off with service ten, without service twenty.
 
-MANICURE MENU:
-- Classic Manicure: twenty five dollars (nail shaping, cuticle care, light massage, polish)
-- Deluxe Manicure: thirty five dollars (exfoliation, warm towels with mask, massage, polish)
-- Gel Shellac Manicure: forty five dollars (trimming, cuticle grooming, hand massage)
-- Milk and Honey Manicure: fifty dollars (milk and honey soak, exfoliation, paraffin wax, massage, collagen gloves)
-- Gel Polish Change without manicure: thirty dollars. Gel Polish Remover: ten dollars.
-
-ACRYLIC NAILS — FULL SET:
-- Acrylic with polish: fifty dollars. Full Set Shellac: sixty dollars. White or Pear Tip: fifty five dollars.
-- Color Powder: sixty dollars. Ombre Full Set: seventy dollars. Pink and White: seventy dollars.
-- Ombre two color: sixty five dollars. Ombre three color: seventy five dollars.
-
-ACRYLIC NAILS — FILL IN:
-- Acrylic with polish: forty dollars. Shellac fill: fifty dollars. White or Pear Tip fill: forty dollars.
-- Color Powder fill: fifty dollars. Ombre fill: sixty dollars. Pink and White fill: sixty dollars.
-
-DIPPING NAILS:
-- Dipping Powder: fifty two dollars. With Tip: sixty dollars.
-- Pink and White Dipping: seventy dollars. Ombre Dipping: seventy dollars.
-- Add Full Manicure: twenty dollars. Add Cuticle Care: ten dollars.
-
-GEL SERVICES (Builder Gel and Gel-X):
-- Builder Gel Natural Nail Set: sixty five dollars. Builder Gel Full Set With Tip: seventy dollars.
-- Gel-X Full Set: sixty five dollars. Gel-X Refill: fifty five dollars.
-
-KID'S MENU:
-- Pedicure: twenty five dollars. Manicure: fifteen dollars.
-- Regular Polish on Nails or Toes: ten dollars each. Gel Add-On: fifteen dollars.
-
-WAXING SERVICES:
-- Eyebrow: fifteen dollars and up. Lip: ten dollars and up. Chin: fifteen and up. Sideburns: fifteen and up.
-- Full Face: forty five and up. Underarms: twenty five and up.
-- Half Arms: twenty five and up. Full Arms: forty and up.
-- Lower or Upper Legs: forty five and up each. Full Legs: sixty and up.
-- Back: forty five and up. Bikini: forty five and up. Brazilian: sixty and up.
-
-ADDITIONAL SERVICES (add-ons):
-- Paraffin Wax: fifteen. Collagen Sock: fifteen. Collagen Gloves: fifteen.
-- Hot Stone Massage add-on: ten and up. Nail Design: seven and up. Nail Repair: seven and up.
-- Nail Take Off with Service: ten. Nail Take Off without Service: twenty.
-- Shellac Take Off with Service: five and up. Shellac Take Off without Service: fifteen and up.
-- Special or Long Shapes: seven and up. Long Length: seven and up. Extra-long one inch: seven and up.
+CONVERSATION QUALITY:
+- Vary your openings — never start two replies the same way. Sound like a warm, sharp human, not a script.
+- If you did not clearly hear something important (name, service, time), politely ask once to repeat it instead of guessing.
+- Before ending a booking, confirm it back in one short sentence: name, service, day and time.
+- Never repeat a sentence you already said in this call.
 
 RULES:
 - State prices as listed above when asked. For add-ons with "and up" pricing, say starting price and note final price depends on the service.
 - For appointments: collect name, service, preferred day and time — say team will call to confirm. Phone is captured automatically.
 - Complimentary drinks: yes we offer wine, champagne, cocktails, and non-alcoholic drinks. Must be twenty one and over for alcohol, limit two per person.
 - If caller is upset or wants a real person: say a staff member will call back shortly.
-- Never make up information or make promises the salon cannot keep.`,
+- Never make up information or make promises the salon cannot keep.
+
+DEMO MODE — IMPORTANT:
+Some callers are SALON OWNERS testing this AI before buying it for their own salon. Signs: they ask "are you an AI", "how does this work", "I want this for my salon", "how much is this system", they mention NEXORA, or they ask questions about the technology instead of nail services.
+When you detect a salon owner prospect:
+- Own it proudly: "Yes — I'm the NEXORA TOUCH AI receptionist, and you're hearing me live, answering a real salon right now."
+- Briefly pitch: answers every call twenty four seven, books appointments, texts customers back, sends Google review requests — and the salon keeps its own phone number. Setup within one day.
+- Pricing if asked: plans start at ninety nine dollars a month, most salons choose Pro at one ninety nine. Fourteen day free trial, no credit card.
+- Then CAPTURE THE LEAD: ask for their name, their salon name, and say the NEXORA team will reach out — or they can sign up at nexora touch dot com.
+- If they speak Vietnamese: warmly say a Vietnamese-speaking team member will call them right back, and take their name and salon name.
+- Stay friendly and confident — you ARE the product demo. Every question they ask, answer it the way the best salesperson would: honest, specific, no pressure.`,
     smsPrompt: `You are a friendly SMS receptionist for Bitcoin Nail Bar at 9793 Westheimer Rd Suite A, Houston TX. Hours: Mon-Sat 9:30am-7pm, closed Sunday. Crypto payments, Vietnamese staff, walk-ins welcome. Reply in 1-2 sentences. For appointments: collect name, service, day/time and say team will call to confirm.`,
     extractPrompt: `Read a nail salon call transcript. Return ONLY raw JSON:
-{"is_booking":true/false,"name":string|null,"service":string|null,"preferred_time":string|null,"notes":string|null}
-is_booking=true only if caller wanted to schedule an appointment.`,
+{"is_booking":true/false,"is_prospect":true/false,"name":string|null,"salon":string|null,"service":string|null,"preferred_time":string|null,"notes":string|null}
+is_booking=true only if caller wanted to schedule an appointment.
+is_prospect=true if the caller is a SALON OWNER interested in the NEXORA AI system itself (asked how it works, pricing of the AI, wants it for their salon). salon=their salon name if mentioned.`,
     promoSms: `💅 Thanks for calling Bitcoin Nail Bar! First-time guests get 10% off. Show this text at checkout. Book: bitcoinnailbar.com`,
     reviewSms: `Thanks for calling Bitcoin Nail Bar! 💜 Please leave us a Google review: ${GOOGLE_REVIEW_LINK}`,
     ownerNotifySms: (l) => `📅 NEW BOOKING — Bitcoin Nail Bar\nName: ${l.name||'?'}\nService: ${l.service||'?'}\nTime: ${l.time||'?'}\nPhone: ${l.phone||'?'}`,
@@ -332,6 +318,84 @@ function getBiz(toNumber) {
   return { biz, key: biz.key };
 }
 
+
+// ── TRIAL RESULTS ENGINE ─────────────────────────────────────
+const AVG_TICKET = Number(process.env.AVG_TICKET || 47); // ước tính doanh thu/booking
+
+// Trả về true nếu milestone này CHƯA từng xảy ra (và đánh dấu luôn)
+async function firstTime(bizKey, kind) {
+  if (!pool) return false;
+  try {
+    const r = await pool.query(
+      `INSERT INTO milestones (business_key, kind) VALUES ($1,$2)
+       ON CONFLICT DO NOTHING RETURNING kind`, [bizKey, kind]);
+    return r.rowCount === 1;
+  } catch { return false; }
+}
+
+// Wow-moment: cuộc gọi đầu tiên AI trả lời
+async function wowFirstCall(biz, callerPhone) {
+  if (!OWNER_PHONE) return;
+  if (await firstTime(biz.key, 'first_call')) {
+    await sendSms(OWNER_PHONE,
+      `🎉 ${biz.name}: AI vừa trả lời CUỘC GỌI ĐẦU TIÊN!\nKhách: ${callerPhone||'?'}\nHệ thống chính thức trực máy 24/7 cho tiệm từ giờ phút này.`,
+      biz.twilioFrom);
+  }
+}
+
+// Wow-moment: booking đầu tiên AI chốt
+async function wowFirstBooking(biz, j, callerPhone) {
+  if (!OWNER_PHONE) return;
+  if (await firstTime(biz.key, 'first_booking')) {
+    await sendSms(OWNER_PHONE,
+      `🏆 BOOKING ĐẦU TIÊN AI chốt cho ${biz.name}!\n${j.name||'?'} · ${j.service||j.topic||'?'} · ${j.preferred_time||''}\nKhông có AI, cuộc gọi này có thể đã mất vào tay tiệm khác.`,
+      biz.twilioFrom);
+  }
+}
+
+// Báo Cáo Tuần — thứ Hai 8:00 sáng giờ Texas
+function chicagoNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+}
+async function sendWeeklyReports() {
+  if (!pool || !OWNER_PHONE) return;
+  for (const biz of Object.values(BUSINESSES)) {
+    try {
+      const c = await pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE outcome <> 'missed')   AS answered,
+          COUNT(*) FILTER (WHERE outcome = 'missed')    AS missed,
+          COUNT(*) FILTER (WHERE is_new_caller)         AS newc
+        FROM calls
+        WHERE business_key=$1 AND created_at > now()-interval '7 days'`, [biz.key]);
+      const l = await pool.query(
+        `SELECT COUNT(*) AS bookings FROM leads
+         WHERE business_key=$1 AND created_at > now()-interval '7 days'`, [biz.key]);
+      const a = Number(c.rows[0].answered||0), m = Number(c.rows[0].missed||0),
+            n = Number(c.rows[0].newc||0), b = Number(l.rows[0].bookings||0);
+      if (a + m + b === 0) continue; // tuần không có hoạt động thì bỏ qua
+      const rev = b * AVG_TICKET;
+      await sendSms(OWNER_PHONE,
+        `📊 BÁO CÁO TUẦN — ${biz.name}\n☎️ ${a} cuộc AI trả lời\n📅 ${b} booking ≈ $${rev.toLocaleString('en-US')}\n📵 ${m} cuộc nhỡ được cứu bằng text\n🆕 ${n} khách mới\nTắt AI, các con số này về 0. 💜`,
+        biz.twilioFrom);
+    } catch (e) { console.error('Weekly report error:', biz.key, e.message); }
+  }
+  console.log('📊 Weekly reports sent.');
+}
+async function weeklyTick() {
+  if (!pool) return;
+  const now = chicagoNow();
+  if (now.getDay() !== 1 || now.getHours() !== 8) return; // chỉ thứ Hai 8h sáng
+  const key = now.toISOString().slice(0,10);
+  try {
+    const r = await pool.query(
+      `INSERT INTO weekly_log (week_key) VALUES ($1)
+       ON CONFLICT DO NOTHING RETURNING week_key`, [key]);
+    if (r.rowCount === 1) await sendWeeklyReports();
+  } catch (e) { console.error('weeklyTick:', e.message); }
+}
+setInterval(weeklyTick, 15 * 60 * 1000); // kiểm tra mỗi 15 phút
+
 // ── Fastify ───────────────────────────────────────────────────
 const fastify = Fastify();
 await fastify.register(fastifyWs);
@@ -425,13 +489,16 @@ fastify.register(async (f) => {
       }
 
       if (msg.type === 'prompt') {
-        const text = msg.voicePrompt || '';
-        if (!text.trim()) return;
+        const text = (msg.voicePrompt || '').trim();
+        // Chống nhiễu: bỏ qua prompt rỗng, quá ngắn, hoặc trùng với câu vừa nói
+        if (!text || text.length < 2) return;
+        const lastUser = [...history].reverse().find(m => m.role === 'user');
+        if (lastUser && lastUser.content === text) return; // trùng -> bỏ qua, tránh lặp
         history.push({ role: 'user', content: text });
         try {
           let full = '';
           currentStream = anthropic.messages.stream({
-            model: MODEL, max_tokens: 220,
+            model: MODEL, max_tokens: 150,
             system: biz.systemPrompt, messages: history,
           });
           currentStream.on('text', (d) => {
@@ -486,6 +553,19 @@ fastify.register(async (f) => {
           });
           const txt = (r.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
           const j = JSON.parse(txt.replace(/```json|```/g,'').trim());
+          // 🔥 Chủ tiệm gọi thử demo và quan tâm mua NEXORA
+          if (j.is_prospect && OWNER_PHONE) {
+            outcome = 'prospect';
+            await saveLead({
+              source: 'call', bizKey: 'nexora-touch', phone: callerPhone,
+              name: j.name, service: 'DEMO PROSPECT', time: null,
+              notes: `Salon: ${j.salon||'?'} | ${j.notes||''}`,
+            });
+            await sendSms(OWNER_PHONE,
+              `🔥 HOT LEAD từ số demo!\nChủ tiệm vừa gọi nghe thử AI và quan tâm.\nTên: ${j.name||'?'}\nTiệm: ${j.salon||'?'}\nSĐT: ${callerPhone||'?'}\nGọi lại NGAY khi còn nóng!`,
+              biz.twilioFrom);
+            console.log(`🔥 Prospect: ${j.name||'?'} — ${j.salon||'?'}`);
+          }
           const hasAction = j.is_booking || j.is_ticket;
           if (hasAction) {
             outcome = j.is_booking ? 'booking' : 'ticket';
@@ -501,11 +581,13 @@ fastify.register(async (f) => {
               );
             }
             console.log(`✅ ${outcome} lưu: ${j.name||'?'}`);
+            if (outcome === 'booking') await wowFirstBooking(biz, j, callerPhone);
           }
         } catch (err) { console.error('Extract error:', err.message); }
       }
 
       await saveCall({ bizKey: biz.key, phone: callerPhone, duration, outcome, isNew });
+      if (outcome !== 'missed') await wowFirstCall(biz, callerPhone);
     });
   });
 });
